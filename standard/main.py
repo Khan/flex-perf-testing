@@ -16,7 +16,7 @@ import webapp2
 import profile_memcache
 import profile_datastore
 
-PREAMBLE = '\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n'
+PREAMBLE = '\n'*20
 API_ENDPOINTS = (PREAMBLE +
 				 'Hello, everyone!\nThis is a web app we will use to test GAE Standard.\n'
 				 'Endpoints:\n'
