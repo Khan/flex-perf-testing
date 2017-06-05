@@ -2,10 +2,8 @@ import logging
 import os
 import base64
 import time
-import Queue
 import threading
-from google.appengine.ext import db, ndb
-from models import SampleNdbModel, SampleModel
+from google.cloud import datastore
 
 class DatastoreProfiler:
 	'''
@@ -16,26 +14,27 @@ class DatastoreProfiler:
 			and whether the data access succeeded.
 	'''
 	def datastore_single_old(self, num_bytes):
-		# create entity from SampleModel
-		sample = SampleModel(name=base64.b64encode(os.urandom(num_bytes)),
-							 email=base64.b64encode(os.urandom(num_bytes)))
+		ds = datastore.Client()
+		key = ds.key('Sample', 'sample_row')
+		sample = datastore.Entity(key=key)
+		sample.update({
+			'name': base64.b64encode(os.urandom(num_bytes)),
+			'email': base64.b64encode(os.urandom(num_bytes))
+		})
 
 		# time put
 		put_start = time.time()
-		db.put(sample)
+		ds.put(sample)
 		put_end = time.time()
-
-		# get the key
-		key = sample.key()
 		
 		# time get
 		get_start = time.time()
-		result = db.get(key)
+		result = ds.get(key)
 		get_end = time.time()
 
 		# time delete
 		delete_start = time.time()
-		db.delete(key)
+		ds.delete(key)
 		delete_end = time.time()
 
 		return {
@@ -55,28 +54,29 @@ class DatastoreProfiler:
 	'''
 	def datastore_multi_old(self, num_bytes, num_entities):
 		# create an array of entities from SampleModel
-		entities = []
+		ds = datastore.Client()
+		entities, keys = [], []
 		for i in range(num_entities):
-			entities.append(SampleModel(
-							name=base64.b64encode(os.urandom(num_bytes)),
-							email=base64.b64encode(os.urandom(num_bytes))))
+			keys.append(ds.key('Sample', 'row%s'%i))
+			entities.append(datastore.Entity(key=keys[-1]))
+			entities[-1].update({
+				'name': base64.b64encode(os.urandom(num_bytes)),
+				'email': base64.b64encode(os.urandom(num_bytes))
+			})
 
 		# time put
 		put_start = time.time()
-		db.put(entities)
+		ds.put_multi(entities)
 		put_end = time.time()
-
-		# get the keys
-		keys = [e.key() for e in entities]
 
 		# time get
 		get_start = time.time()
-		result = db.get(keys)
+		result = ds.get_multi(keys)
 		get_end = time.time()
 
 		# time delete
 		delete_start = time.time()
-		db.delete(keys)
+		ds.delete_multi(keys)
 		delete_end = time.time()
 
 		return {
@@ -109,7 +109,7 @@ class DatastoreProfiler:
 
 		# time get
 		get_start = time.time()
-		result = key.get(use_memcache=False)
+		result = key.get()
 		get_end = time.time()
 
 		# time delete

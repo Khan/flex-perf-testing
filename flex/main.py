@@ -17,6 +17,7 @@ import logging
 
 from flask import Flask
 from profile_memcache import MemcacheProfiler
+from profile_datastore import DatastoreProfiler
 
 app = Flask(__name__)
 
@@ -30,9 +31,9 @@ API_ENDPOINTS = (PREAMBLE +
                  ' -- multiple threads of memcache get operations on a single key</br>'
                  ' - /profile_memcache&bytes=(int)&values=(int)'
                  ' -- a synchronous multiget/multiset memcache operation</br>'
-                 ' - /profile_memcache&bytes=(int)&gets=(int)&sleep=(bool)'
+                 ' - [N/A] /profile_memcache&bytes=(int)&gets=(int)&sleep=(bool)'
                  ' -- async multiget memcache operations on the same key</br>'
-                 ' - /profile_memcache_unique&bytes=(int)&gets=(int)&sleep=(bool)'
+                 ' - [N/A] /profile_memcache_unique&bytes=(int)&gets=(int)&sleep=(bool)'
                  ' -- async multiget memcache operations on different keys</br>'
                  ' - /profile_datastore&bytes=(int)&properties=(int)'
                  ' -- a single datastore put/get operation</br>'
@@ -40,7 +41,7 @@ API_ENDPOINTS = (PREAMBLE +
                  ' -- a datastore multiput/multiget operation</br>'
                  ' - /profile_datastore_old&bytes=(int)'
                  ' -- a single old datastore put/get operation</br>'
-                 ' - /profile_datastore_old&bytes=(int)&entitie(int)'
+                 ' - /profile_datastore_old&bytes=(int)&entities=(int)'
                  ' -- a batch old datastore put/get operation</br>')
 
 @app.route('/')
@@ -59,13 +60,14 @@ def server_error(e):
 
 @app.route('/profile_memcache&bytes=<int:num_bytes>', 
     defaults={'num_threads': None, 'num_values': None})
-@app.route('/profile_memcache&bytes=<int:num_bytes>&threads=<int:num_threads>',
+@app.route('/profile_memcache&bytes=<int:num_bytes>'
+           '&threads=<int:num_threads>',
     defaults={'num_values': None})
-@app.route('/profile_memcache&bytes=<int:num_bytes>&values=<int:num_values>',
+@app.route('/profile_memcache&bytes=<int:num_bytes>'
+           '&values=<int:num_values>',
     defaults={'num_threads': None})
 def profile_memcache(num_bytes, num_threads, num_values):
     p = MemcacheProfiler()
-    result = None
     if not num_threads and not num_values:
         result = p.memcache_single(num_bytes)
         return (PREAMBLE+
@@ -87,6 +89,22 @@ def profile_memcache(num_bytes, num_threads, num_values):
                     result['correct'], result['set_time'],
                     result['get_time'], result['del_time']))
 
+
+@app.route('/profile_datastore_old&bytes=<int:num_bytes>',
+    defaults={'num_entities': None})
+@app.route('/profile_datastore_old&bytes=<int:num_bytes>'
+           '&entities=<int:num_entities>')
+def profile_datastore_old(num_bytes, num_entities):
+    p = DatastoreProfiler()
+    if not num_entities:
+        result = p.datastore_single_old(num_bytes)
+    else:
+        result = p.datastore_multi_old(num_bytes, num_entities)
+    return (PREAMBLE+
+            'Datastore old: Correct? {}<br/>'
+            'Put time: {}<br/>Get time: {}<br/>Del time: {}'.format(
+                result['correct'], result['put_time'],
+                result['get_time'], result['del_time']))
 
 if __name__ == '__main__':
     # This is used when running locally. Gunicorn is used to run the
