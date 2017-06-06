@@ -4,9 +4,9 @@ import os
 import threading
 import time
 
-import google.appengine.ext.db
-import google.appengine.ext.ndb
 import google.cloud.datastore
+import google.appengine.ext.ndb
+import google.appengine.ext.db
 
 import models
 
@@ -59,7 +59,6 @@ def multi_old(num_bytes, num_entities):
     Return: the time for put, get, and delete operations,
             and whether the data access succeeded.
     """
-    # create an array of entities from SampleModel
     ds = google.cloud.datastore.Client()
     entities, keys = [], []
     for i in range(num_entities):

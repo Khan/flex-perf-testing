@@ -12,73 +12,153 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import webapp2
+from flask import Flask
+from flask import request
+import logging
 
-import endpoints_memcache
 import profile_memcache
 import profile_datastore
 
-PREAMBLE = '\n' * 20
+app = Flask(__name__)
+
+
+PREAMBLE = '<br/>' * 20
 API_ENDPOINTS = (PREAMBLE +
-                 'Hello, everyone!\nThis is a web app we will use to '
-                 'test GAE Standard.\n'
-                 'Endpoints:\n'
-                 ' - /profile_memcache&bytes=(int)'
-                 ' -- a single memcache get/set operation\n'
-                 ' - /profile_memcache&bytes=(int)&threads=(int)'
-                 ' -- multiple threads of memcache get operations'
-                 ' on a single key\n'
-                 ' - /profile_memcache&bytes=(int)&values=(int)'
-                 ' -- a synchronous multiget/multiset memcache operation\n'
-                 ' - /profile_memcache&bytes=(int)&gets=(int)&sleep=(bool)'
-                 ' -- async multiget memcache operations on the same key\n - '
-                 ' /profile_memcache_unique&bytes=(int)&gets=(int)&sleep=(bool)'
-                 ' -- async multiget memcache operations on different keys\n'
-                 ' - /profile_datastore&bytes=(int)&properties=(int)'
-                 ' -- a single datastore put/get operation\n - '
-                 ' /profile_datastore&bytes=(int)&properties=(int)&entities=(int)'
-                 ' -- a datastore multiput/multiget operation\n'
-                 ' - /profile_datastore_old&bytes=(int)'
-                 ' -- a single old datastore put/get operation\n'
-                 ' - /profile_datastore_old&bytes=(int)&entities=(int)'
-                 ' -- a batch old datastore put/get operation\n')
+                 """Hello, everyone!
+                 <br/>This is a web app we will use to test GAE Standard.<br/>
+                 Endpoints:<br/>
+                  - /profile_memcache&bytes=(int)
+                  -- a single memcache get/set operation<br/>
+                  - /profile_memcache&bytes=(int)&threads=(int)
+                  -- multiple threads of memcache get operations
+                     on a single key<br/>
+                  - /profile_memcache&bytes=(int)&values=(int)
+                  -- synchronous multiget/multiset memcache operation<br/>
+                  - /profile_memcache&bytes=(int)&gets=(int)&sleep=(0/1)
+                  -- async multiget memcache operations on the same key<br/>
+                  - /profile_memcache_unique&bytes=(int)&gets=(int)&sleep=(0/1)
+                  -- async multiget memcache operations on different keys<br/>
+                  <br/>
+                  - /profile_datastore&bytes=(int)&properties=(int)
+                  -- a single datastore put/get operation<br/>
+                  - /profile_datastore&bytes=(int)&properties=(int)
+                                                  &entities=(int)
+                  -- a datastore multiput/multiget operation<br/>
+                  <br/>
+                  - /profile_datastore_old&bytes=(int)
+                  -- a single old datastore put/get operation<br/>
+                  - /profile_datastore_old&bytes=(int)&entities=(int)
+                  -- a batch old datastore put/get operation<br/>""")
 
 
-class MainPage(webapp2.RequestHandler):
-    def __init__(self, request, response):
-        super(MainPage, self).__init__(request, response)
-        self.memcache_profiler = profile_memcache.MemcacheProfiler()
-        self.datastore_profiler = profile_datastore.DatastoreProfiler()
-        self.response.headers['Content-Type'] = 'text/plain'
+@app.route('/')
+def hello():
+    """Return a friendly HTTP greeting."""
+    return API_ENDPOINTS
 
-    def get(self):
-        self.response.write(API_ENDPOINTS)
 
-from endpoints_memcache import (MemcacheProfile, MemcacheProfileThreaded, 
-                                 MemcacheProfileMulti, MemcacheProfileRepeated,
-                                 MemcacheProfileRepeatedUnique)
-from endpoints_datastore import (DatastoreProfile, DatastoreProfileMulti,
-                                 DatastoreProfileOld, DatastoreProfileOldMulti)
+@app.errorhandler(500)
+def server_error(e):
+    logging.exception('An error occurred during a request.')
+    return """
+    An internal error occurred: <pre>{}</pre>
+    See logs for full stacktrace.
+    """.format(e), 500
 
-app = webapp2.WSGIApplication([
-    ('/', MainPage),
-    (r'/profile_memcache&bytes=(\d+)',
-        MemcacheProfile),
-    (r'/profile_memcache&bytes=(\d+)&threads=(\d+)',
-        MemcacheProfileThreaded),
-    (r'/profile_memcache&bytes=(\d+)&values=(\d+)',
-        MemcacheProfileMulti),
-    (r'/profile_memcache&bytes=(\d+)&gets=(\d+)&sleep=(.*)',
-        MemcacheProfileRepeated),
-    (r'/profile_memcache_unique&bytes=(\d+)&gets=(\d+)&sleep=(.*)',
-        MemcacheProfileRepeatedUnique),
-    (r'/profile_datastore&bytes=(\d+)&properties=(\d+)',
-        DatastoreProfile),
-    (r'/profile_datastore&bytes=(\d+)&properties=(\d+)&entities=(\d+)',
-        DatastoreProfileMulti),
-    (r'/profile_datastore_old&bytes=(\d+)',
-        DatastoreProfileOld),
-    (r'/profile_datastore_old&bytes=(\d+)&entities=(\d+)',
-        DatastoreProfileOldMulti)
 
-], debug=True)
+@app.route('/profile_memcache')
+def prof_memcache():
+    num_bytes = int(request.args.get('bytes'))
+    num_threads = request.args.get('threads')
+    num_values = request.args.get('values')
+    num_gets = request.args.get('gets')
+    sleep = (request.args.get('sleep') == 'true')
+
+    num_threads = int(num_threads) if num_threads else None
+    num_values = int(num_values) if num_values else None
+    num_gets = int(num_gets) if num_gets else None
+
+    if not (num_threads or num_values or num_gets):
+        result = profile_memcache.single(num_bytes)
+        return (PREAMBLE +
+                'Memcache single: Correct? {}<br/>'
+                'Set time: {}<br/>Get time: {}<br/>Del time: {}'.format(
+                    result['correct'], result['set_time'],
+                    result['get_time'], result['del_time']))
+    elif num_threads:
+        result = profile_memcache.threaded(num_bytes, num_threads)
+        return (PREAMBLE +
+                'Memcache threaded: Correct? {}<br/>'
+                'Get time: {}'.format(
+                    result['correct'], result['get_time']))
+    elif num_values:
+        result = profile_memcache.multi(num_bytes, num_values)
+        return (PREAMBLE +
+                'Memcache multi: Correct? {}<br/>'
+                'Set time: {}<br/>Get time: {}<br/>Del time: {}'.format(
+                    result['correct'], result['set_time'],
+                    result['get_time'], result['del_time']))
+    else:
+        result = profile_memcache.repeated(num_bytes, num_gets, sleep)
+        return (PREAMBLE +
+                'Memcache repeated: Correct? {}<br/>'
+                'Get time: {}<br/>'.format(
+                    result['correct'], result['get_time']))
+
+
+@app.route('/profile_memcache_unique')
+def prof_memcache_unique():
+    num_bytes = int(request.args.get('bytes'))
+    num_gets = int(request.args.get('gets'))
+    sleep = (request.args.get('sleep') == 'true')
+
+    result = profile_memcache.repeated_unique(num_bytes, num_gets, sleep)
+    return (PREAMBLE +
+            'Memcache repeated unique: Correct? {}<br/>'
+            'Get time: {}<br/>'.format(
+                result['correct'], result['get_time']))
+
+
+@app.route('/profile_datastore_old')
+def prof_datastore_old():
+    num_bytes = int(request.args.get('bytes'))
+    num_entities = request.args.get('entities')
+
+    num_entities = int(num_entities) if num_entities else None
+
+    if not num_entities:
+        result = profile_datastore.single_old(num_bytes)
+    else:
+        result = profile_datastore.multi_old(num_bytes, num_entities)
+    return (PREAMBLE +
+            'Datastore old: Correct? {}<br/>'
+            'Put time: {}<br/>Get time: {}<br/>Del time: {}'.format(
+                result['correct'], result['put_time'],
+                result['get_time'], result['del_time']))
+
+
+@app.route('/profile_datastore')
+def prof_datastore():
+    num_bytes = int(request.args.get('bytes'))
+    num_entities = request.args.get('entities')
+    num_properties = request.args.get('properties')
+
+    num_entities = int(num_entities) if num_entities else None
+    num_properties = int(num_properties) if num_properties else None
+
+    if not num_entities:
+        result = profile_datastore.single(num_bytes, num_properties)
+    else:
+        result = profile_datastore.multi(num_bytes, num_properties,
+                                         num_entities)
+    return(PREAMBLE +
+           'Datastore ndb: Correct? {}<br/>'
+           'Put time: {}<br/>Get time: {}<br/>Del time: {}'.
+           format(result['correct'], result['put_time'],
+                  result['get_time'], result['del_time']))
+
+if __name__ == '__main__':
+    # This is used when running locally. Gunicorn is used to run the
+    # application on Google App Engine. See entrypoint in app.yaml.
+    app.run(host='127.0.0.1', port=8080, debug=True)
+# [END app]

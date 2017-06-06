@@ -24,22 +24,27 @@ app = Flask(__name__)
 
 PREAMBLE = '<br/>' * 12
 API_ENDPOINTS = (PREAMBLE +
-                 """Hello, everyone!<br/>This is a web app we will use to test GAE Flex.<br/>
+                 """Hello, everyone!
+                 <br/>This is a web app we will use to test GAE Flex.<br/>
                  Endpoints:<br/>
                   - /profile_memcache&bytes=(int)
                   -- a single memcache get/set operation<br/>
                   - /profile_memcache&bytes=(int)&threads=(int)
-                  -- multiple threads of memcache get operations on a single key<br/>
+                  -- multiple threads of memcache get operations
+                     on a single key<br/>
                   - /profile_memcache&bytes=(int)&values=(int)
-                  -- a synchronous multiget/multiset memcache operation<br/>
-                  - [N/A] /profile_memcache&bytes=(int)&gets=(int)&sleep=(bool)
+                  -- synchronous multiget/multiset memcache operation<br/>
+                  - /profile_memcache&bytes=(int)&gets=(int)&sleep=(0/1)
                   -- async multiget memcache operations on the same key<br/>
-                  - [N/A] /profile_memcache_unique&bytes=(int)&gets=(int)&sleep=(bool)
+                  - /profile_memcache_unique&bytes=(int)&gets=(int)&sleep=(0/1)
                   -- async multiget memcache operations on different keys<br/>
+                  <br/>
                   - /profile_datastore&bytes=(int)&properties=(int)
                   -- a single datastore put/get operation<br/>
-                  - /profile_datastore&bytes=(int)&properties=(int)&entities=(int)
+                  - /profile_datastore&bytes=(int)&properties=(int)
+                                                  &entities=(int)
                   -- a datastore multiput/multiget operation<br/>
+                  <br/>
                   - /profile_datastore_old&bytes=(int)
                   -- a single old datastore put/get operation<br/>
                   - /profile_datastore_old&bytes=(int)&entities=(int)
@@ -61,7 +66,7 @@ def server_error(e):
     """.format(e), 500
 
 
-@app.route('/profile_memcache&bytes=<int:num_bytes>', 
+@app.route('/profile_memcache&bytes=<int:num_bytes>',
            defaults={'num_threads': None, 'num_values': None})
 @app.route('/profile_memcache&bytes=<int:num_bytes>'
            '&threads=<int:num_threads>',
@@ -69,7 +74,7 @@ def server_error(e):
 @app.route('/profile_memcache&bytes=<int:num_bytes>'
            '&values=<int:num_values>',
            defaults={'num_threads': None})
-def profile_memcache(num_bytes, num_threads, num_values):
+def prof_memcache(num_bytes, num_threads, num_values):
     if not num_threads and not num_values:
         result = profile_memcache.single(num_bytes)
         return (PREAMBLE +
@@ -96,7 +101,7 @@ def profile_memcache(num_bytes, num_threads, num_values):
            defaults={'num_entities': None})
 @app.route('/profile_datastore_old&bytes=<int:num_bytes>'
            '&entities=<int:num_entities>')
-def profile_datastore_old(num_bytes, num_entities):
+def prof_datastore_old(num_bytes, num_entities):
     if not num_entities:
         result = profile_datastore.single_old(num_bytes)
     else:
@@ -114,7 +119,7 @@ def profile_datastore_old(num_bytes, num_entities):
 @app.route('/profile_datastore&bytes=<int:num_bytes>'
            '&properties=<int:num_properties>'
            '&entities=<int:num_entities>')
-def profile_datastore(num_bytes, num_properties, num_entities):
+def prof_datastore(num_bytes, num_properties, num_entities):
     if not num_entities:
         result = profile_datastore.single(num_bytes, num_properties)
     else:
@@ -122,9 +127,9 @@ def profile_datastore(num_bytes, num_properties, num_entities):
                                          num_entities)
     return(PREAMBLE +
            'Datastore ndb: Correct? {}<br/>'
-           'Put time: {}<br/>Get time: {}<br/>Del time: {}'.format(
-           result['correct'], result['put_time'],
-           result['get_time'], result['del_time']))
+           'Put time: {}<br/>Get time: {}<br/>Del time: {}'.
+           format(result['correct'], result['put_time'],
+                  result['get_time'], result['del_time']))
 
 if __name__ == '__main__':
     # This is used when running locally. Gunicorn is used to run the

@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc. All rights reserved.
+# Copyright 2016 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import webtest
+from google.appengine.ext import vendor
 
-import main
-
-
-def test_get():
-    app = webtest.TestApp(main.app)
-
-    response = app.get('/')
-
-    assert response.status_int == 200
-    assert response.body == 'Hello, World!'
+# Add any libraries installed in the "lib" folder.
+vendor.add('lib')
