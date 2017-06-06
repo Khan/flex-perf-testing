@@ -2,3 +2,4 @@ Flask==0.12.1
 gunicorn==19.7.1
 pylibmc==1.5.2
 google-cloud-datastore==0.22.1
+googledatastore==7.0.1

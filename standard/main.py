@@ -13,67 +13,72 @@
 # limitations under the License.
 
 import webapp2
+
+import endpoints_memcache
 import profile_memcache
 import profile_datastore
 
-PREAMBLE = '\n'*20
+PREAMBLE = '\n' * 20
 API_ENDPOINTS = (PREAMBLE +
-				 'Hello, everyone!\nThis is a web app we will use to test GAE Standard.\n'
-				 'Endpoints:\n'
-				 ' - /profile_memcache&bytes=(int)'
-				 ' -- a single memcache get/set operation\n'
-				 ' - /profile_memcache&bytes=(int)&threads=(int)'
-				 ' -- multiple threads of memcache get operations on a single key\n'
-				 ' - /profile_memcache&bytes=(int)&values=(int)'
-				 ' -- a synchronous multiget/multiset memcache operation\n'
-				 ' - /profile_memcache&bytes=(int)&gets=(int)&sleep=(bool)'
-				 ' -- async multiget memcache operations on the same key\n'
-				 ' - /profile_memcache_unique&bytes=(int)&gets=(int)&sleep=(bool)'
-				 ' -- async multiget memcache operations on different keys\n'
-				 ' - /profile_datastore&bytes=(int)&properties=(int)'
-				 ' -- a single datastore put/get operation\n'
-				 ' - /profile_datastore&bytes=(int)&properties=(int)&entities=(int)'
-				 ' -- a datastore multiput/multiget operation\n'
-				 ' - /profile_datastore_old&bytes=(int)'
-				 ' -- a single old datastore put/get operation\n'
-				 ' - /profile_datastore_old&bytes=(int)&entities=(int)'
-				 ' -- a batch old datastore put/get operation\n')
+                 'Hello, everyone!\nThis is a web app we will use to '
+                 'test GAE Standard.\n'
+                 'Endpoints:\n'
+                 ' - /profile_memcache&bytes=(int)'
+                 ' -- a single memcache get/set operation\n'
+                 ' - /profile_memcache&bytes=(int)&threads=(int)'
+                 ' -- multiple threads of memcache get operations'
+                 ' on a single key\n'
+                 ' - /profile_memcache&bytes=(int)&values=(int)'
+                 ' -- a synchronous multiget/multiset memcache operation\n'
+                 ' - /profile_memcache&bytes=(int)&gets=(int)&sleep=(bool)'
+                 ' -- async multiget memcache operations on the same key\n - '
+                 ' /profile_memcache_unique&bytes=(int)&gets=(int)&sleep=(bool)'
+                 ' -- async multiget memcache operations on different keys\n'
+                 ' - /profile_datastore&bytes=(int)&properties=(int)'
+                 ' -- a single datastore put/get operation\n - '
+                 ' /profile_datastore&bytes=(int)&properties=(int)&entities=(int)'
+                 ' -- a datastore multiput/multiget operation\n'
+                 ' - /profile_datastore_old&bytes=(int)'
+                 ' -- a single old datastore put/get operation\n'
+                 ' - /profile_datastore_old&bytes=(int)&entities=(int)'
+                 ' -- a batch old datastore put/get operation\n')
+
 
 class MainPage(webapp2.RequestHandler):
-	def __init__(self, request, response):
-		super(MainPage, self).__init__(request, response)
-		self.memcache_profiler = profile_memcache.MemcacheProfiler()
-		self.datastore_profiler = profile_datastore.DatastoreProfiler()
-		self.response.headers['Content-Type'] = 'text/plain'
+    def __init__(self, request, response):
+        super(MainPage, self).__init__(request, response)
+        self.memcache_profiler = profile_memcache.MemcacheProfiler()
+        self.datastore_profiler = profile_datastore.DatastoreProfiler()
+        self.response.headers['Content-Type'] = 'text/plain'
 
-	def get(self):
-		self.response.write(API_ENDPOINTS)
+    def get(self):
+        self.response.write(API_ENDPOINTS)
 
 from endpoints_memcache import (MemcacheProfile, MemcacheProfileThreaded, 
-								 MemcacheProfileMulti, MemcacheProfileRepeated, 
-								 MemcacheProfileRepeatedUnique)
+                                 MemcacheProfileMulti, MemcacheProfileRepeated,
+                                 MemcacheProfileRepeatedUnique)
 from endpoints_datastore import (DatastoreProfile, DatastoreProfileMulti,
-								 DatastoreProfileOld, DatastoreProfileOldMulti)
+                                 DatastoreProfileOld, DatastoreProfileOldMulti)
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
-    (r'/profile_memcache&bytes=(\d+)', 
-    	MemcacheProfile),
-    (r'/profile_memcache&bytes=(\d+)&threads=(\d+)', 
-    	MemcacheProfileThreaded),
-    (r'/profile_memcache&bytes=(\d+)&values=(\d+)', 
-    	MemcacheProfileMulti),
-    (r'/profile_memcache&bytes=(\d+)&gets=(\d+)&sleep=(.*)', 
-    	MemcacheProfileRepeated),
-    (r'/profile_memcache_unique&bytes=(\d+)&gets=(\d+)&sleep=(.*)', 
-    	MemcacheProfileRepeatedUnique),
-    (r'/profile_datastore&bytes=(\d+)&properties=(\d+)', 
-    	DatastoreProfile),
-    (r'/profile_datastore&bytes=(\d+)&properties=(\d+)&entities=(\d+)', 
-    	DatastoreProfileMulti),
-    (r'/profile_datastore_old&bytes=(\d+)', 
-    	DatastoreProfileOld),
+    (r'/profile_memcache&bytes=(\d+)',
+        MemcacheProfile),
+    (r'/profile_memcache&bytes=(\d+)&threads=(\d+)',
+        MemcacheProfileThreaded),
+    (r'/profile_memcache&bytes=(\d+)&values=(\d+)',
+        MemcacheProfileMulti),
+    (r'/profile_memcache&bytes=(\d+)&gets=(\d+)&sleep=(.*)',
+        MemcacheProfileRepeated),
+    (r'/profile_memcache_unique&bytes=(\d+)&gets=(\d+)&sleep=(.*)',
+        MemcacheProfileRepeatedUnique),
+    (r'/profile_datastore&bytes=(\d+)&properties=(\d+)',
+        DatastoreProfile),
+    (r'/profile_datastore&bytes=(\d+)&properties=(\d+)&entities=(\d+)',
+        DatastoreProfileMulti),
+    (r'/profile_datastore_old&bytes=(\d+)',
+        DatastoreProfileOld),
     (r'/profile_datastore_old&bytes=(\d+)&entities=(\d+)',
-    	DatastoreProfileOldMulti)
+        DatastoreProfileOldMulti)
 
 ], debug=True)

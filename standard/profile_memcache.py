@@ -1,11 +1,13 @@
+import Queue
+import base64
 import logging
 import os
-import base64
-import time
-import Queue
 import threading
+import time
+
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import memcache
+
 
 def _wait_any_fast(rpcs, sleep, deadline=1):
     # if ka_globals.is_dev_server:
@@ -26,17 +28,18 @@ def _wait_any_fast(rpcs, sleep, deadline=1):
             time.sleep(0.0001)
     raise Exception('RPC deadline exceeded')
 
+
 class MemcacheProfiler:
     # Some convenience methods for Memcache profiling.
 
-    '''
-    Make a single request to memcache.
-    - num_bytes: number of bytes to attach to the key
-
-    Return: the time for get, set, and delete operations,
-            and whether the data access succeeded.
-    '''
     def memcache_single(self, num_bytes):
+        """
+        Make a single request to memcache.
+
+        - num_bytes: number of bytes to attach to the key
+        Return: the time for get, set, and delete operations,
+                and whether the data access succeeded.
+        """
         # create the data and key
         data = os.urandom(num_bytes)
         key = 'profile_memcache_%s' % base64.b64encode(os.urandom(16))
@@ -73,15 +76,15 @@ class MemcacheProfiler:
             'correct': data == data_again,
         }
 
-    '''
-    Make multiple threads of get requests from memcache.
-    - num_bytes: number of bytes to attach to the key
-    - num_gets: number of gets to call (each in own thread)
-
-    Return: the time for the get operations,
-            and whether the data access succeeded.
-    '''
     def memcache_threaded(self, num_bytes, num_gets):
+        """
+        Make multiple threads of get requests from memcache.
+
+        - num_bytes: number of bytes to attach to the key
+        - num_gets: number of gets to call (each in own thread)
+        Return: the time for the get operations,
+                and whether the data access succeeded.
+        """
         # create and set the (key, data) pair
         data = os.urandom(num_bytes)
         key = 'profile_memcache_%s' % base64.b64encode(os.urandom(16))
@@ -120,15 +123,15 @@ class MemcacheProfiler:
             'correct': data == data_again,
         }
 
-    '''
-    Make a batch set and get request to memcache.
-    - num_bytes: number of bytes to attach to the key
-    - num_vals: number of (key, value) pairs in batch
-
-    Return: the time for the set, get, and delete operations,
-            and whether the data access succeeded.
-    '''
     def memcache_multi(self, num_bytes, num_vals):
+        """
+        Make a batch set and get request to memcache.
+
+        - num_bytes: number of bytes to attach to the key
+        - num_vals: number of (key, value) pairs in batch
+        Return: the time for the set, get, and delete operations,
+                and whether the data access succeeded.
+        """
         # create the data and set to memcache
         data = {
             'profile_memcache_%s' % base64.b64encode(os.urandom(16)):
@@ -161,16 +164,16 @@ class MemcacheProfiler:
             'correct': data == data_again,
         }
 
-    '''
-    Make multiple async get requests to the same key in memcache.
-    - num_bytes: number of bytes to attach to the key
-    - num_gets: number of async get requests to make
-    - sleep: ? TODO(kasrakoushan): figure out
-
-    Return: the time for the get operation, and
-            whether the data access succeeded.
-    '''
     def memcache_repeated(self, num_bytes, num_gets, sleep):
+        """
+        Make multiple async get requests to the same key in memcache.
+
+        - num_bytes: number of bytes to attach to the key
+        - num_gets: number of async get requests to make
+        - sleep: ? TODO(kasrakoushan): figure out
+        Return: the time for the get operation, and
+                whether the data access succeeded.
+        """
         # create and set the data
         data = os.urandom(num_bytes)
         key = 'profile_memcache_%s' % base64.b64encode(os.urandom(16))
@@ -205,16 +208,16 @@ class MemcacheProfiler:
             'correct': data == data_again,
         }
 
-    '''
-    Make multiple async get requests to different keys in memcache.
-    - num_bytes: number of bytes to attach to each key
-    - num_gets: number of keys to set
-    - sleep: ? TODO(kasrakoushan): figure out
-
-    Return: the time for the get operation, and
-            whether the data access succeeded.
-    '''
     def memcache_repeated_unique(self, num_bytes, num_gets, sleep):
+        """
+        Make multiple async get requests to different keys in memcache.
+
+        - num_bytes: number of bytes to attach to each key
+        - num_gets: number of keys to set
+        - sleep: ? TODO(kasrakoushan): figure out
+        Return: the time for the get operation, and
+                whether the data access succeeded.
+        """
         # create and set the data
         data = os.urandom(num_bytes)
         keys = ['profile_memcache_%s' % base64.b64encode(os.urandom(16))
@@ -247,7 +250,5 @@ class MemcacheProfiler:
 
         return {
             'get_time': get_end - get_start,
-            'set_time': set_end - set_start,
             'correct': data == data_again,
         }
-
