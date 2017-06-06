@@ -5,6 +5,13 @@ import threading
 import time
 
 import google.cloud.datastore
+'''
+# figuring out import errors
+curdir = os.path.dirname(__file__)
+path = os.path.join(curdir, '/google_appengine')
+import sys
+sys.path.append(path)
+'''
 import google.appengine.ext.ndb
 import google.appengine.ext.db
 
@@ -92,12 +99,11 @@ def multi_old(num_bytes, num_entities):
     }
 
 
-def single(num_bytes, num_properties):
+def single(num_bytes):
     """
     Make a single request to datastore ndb.
 
     - num_bytes: number of bytes to assign to data properties
-    - num_properties: number of properties to attach to the entity
     Return: the time for put, get, and delete operations,
             and whether the data access succeeded.
     """
@@ -106,11 +112,9 @@ def single(num_bytes, num_properties):
     google.appengine.ext.ndb.get_context().set_cache_policy(False)
 
     # create an entity with given number of properties
-    sample = models.SampleNdbModel()
-    for i in range(num_properties):
-        # set each property to a random string
-        num = base64.b64encode(os.urandom(num_bytes))
-        exec('sample.property%s = num' % i)
+    sample = sample = models.SampleNdbModel(
+        name=base64.b64encode(os.urandom(num_bytes)),
+        email=base64.b64encode(os.urandom(num_bytes)))
 
     # time put
     put_start = time.time()
@@ -135,12 +139,11 @@ def single(num_bytes, num_properties):
     }
 
 
-def multi(num_bytes, num_properties, num_entities):
+def multi(num_bytes, num_entities):
     """
     Make a batch request to datastore ndb.
 
     - num_bytes: number of bytes to assign to data properties
-    - num_properties: number of properties to attach to the entity
     - num_entities: number of data entities (or rows) to set
     Return: the time for put, get, and delete operations,
             and whether the data access succeeded.
@@ -152,10 +155,9 @@ def multi(num_bytes, num_properties, num_entities):
     # create an array of entities with given number of properties
     entities = []
     for i in range(num_entities):
-        entities.append(models.SampleNdbModel())
-        for j in range(num_properties):
-            num = base64.b64encode(os.urandom(num_bytes))
-            exec('entities[-1].property%s = num' % j)
+        entities.append(models.SampleNdbModel(
+            name=base64.b64encode(os.urandom(num_bytes)),
+            email=base64.b64encode(os.urandom(num_bytes))))
 
     # time put
     put_start = time.time()

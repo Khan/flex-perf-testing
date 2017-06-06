@@ -1,10 +1,15 @@
-from google.appengine.ext import db, ndb
+from google.appengine.ext import db
+from google.appengine.ext import ndb
 
 
-class SampleNdbModel(ndb.Expando):
-    # An empty model
-    # Expando allows us to add properties to this model
-    pass
+class SampleNdbModel(ndb.Model):
+    # Sample model for testing
+    name = ndb.StringProperty()
+    email = ndb.StringProperty()
+
+    def __eq__(self, other):
+        # Check that name and email properties are equal
+        return self.name == other.name and self.email == other.email
 
 
 class SampleModel(db.Model):

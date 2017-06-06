@@ -39,10 +39,9 @@ API_ENDPOINTS = (PREAMBLE +
                   - /profile_memcache_unique&bytes=(int)&gets=(int)&sleep=(0/1)
                   -- async multiget memcache operations on different keys<br/>
                   <br/>
-                  - /profile_datastore&bytes=(int)&properties=(int)
+                  - /profile_datastore&bytes=(int)
                   -- a single datastore put/get operation<br/>
-                  - /profile_datastore&bytes=(int)&properties=(int)
-                                                  &entities=(int)
+                  - /profile_datastore&bytes=(int)&entities=(int)
                   -- a datastore multiput/multiget operation<br/>
                   <br/>
                   - /profile_datastore_old&bytes=(int)
@@ -141,15 +140,13 @@ def prof_datastore_old():
 def prof_datastore():
     num_bytes = int(request.args.get('bytes'))
     num_entities = request.args.get('entities')
-    num_properties = request.args.get('properties')
 
     num_entities = int(num_entities) if num_entities else None
-    num_properties = int(num_properties) if num_properties else None
 
     if not num_entities:
-        result = profile_datastore.single(num_bytes, num_properties)
+        result = profile_datastore.single(num_bytes)
     else:
-        result = profile_datastore.multi(num_bytes, num_properties,
+        result = profile_datastore.multi(num_bytes,
                                          num_entities)
     return(PREAMBLE +
            'Datastore ndb: Correct? {}<br/>'

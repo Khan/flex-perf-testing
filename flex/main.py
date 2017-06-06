@@ -39,10 +39,9 @@ API_ENDPOINTS = (PREAMBLE +
                   - /profile_memcache_unique&bytes=(int)&gets=(int)&sleep=(0/1)
                   -- async multiget memcache operations on different keys<br/>
                   <br/>
-                  - /profile_datastore&bytes=(int)&properties=(int)
+                  - /profile_datastore&bytes=(int)
                   -- a single datastore put/get operation<br/>
-                  - /profile_datastore&bytes=(int)&properties=(int)
-                                                  &entities=(int)
+                  - /profile_datastore&bytes=(int)&entities=(int)
                   -- a datastore multiput/multiget operation<br/>
                   <br/>
                   - /profile_datastore_old&bytes=(int)
@@ -113,17 +112,15 @@ def prof_datastore_old(num_bytes, num_entities):
                 result['get_time'], result['del_time']))
 
 
-@app.route('/profile_datastore&bytes=<int:num_bytes>'
-           '&properties=<int:num_properties>',
+@app.route('/profile_datastore&bytes=<int:num_bytes>',
            defaults={'num_entities': None})
 @app.route('/profile_datastore&bytes=<int:num_bytes>'
-           '&properties=<int:num_properties>'
            '&entities=<int:num_entities>')
-def prof_datastore(num_bytes, num_properties, num_entities):
+def prof_datastore(num_bytes, num_entities):
     if not num_entities:
-        result = profile_datastore.single(num_bytes, num_properties)
+        result = profile_datastore.single(num_bytes)
     else:
-        result = profile_datastore.multi(num_bytes, num_properties,
+        result = profile_datastore.multi(num_bytes,
                                          num_entities)
     return(PREAMBLE +
            'Datastore ndb: Correct? {}<br/>'
