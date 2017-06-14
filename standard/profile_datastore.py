@@ -1,16 +1,17 @@
+"""Some convenience methods for testing the datastore."""
+
 import base64
-import logging
 import os
 import time
 
-from google.appengine.ext import db, ndb
+from google.appengine.ext import db
+from google.appengine.ext import ndb
 
 import models
 
 
-def single_old(num_bytes):
-    """
-    Make a single request to datastore db.
+def single_datastore(num_bytes):
+    """Make a single request to datastore db.
 
     - num_bytes: number of bytes to assign to data properties
     Return: the time for put, get, and delete operations,
@@ -45,9 +46,8 @@ def single_old(num_bytes):
     }
 
 
-def multi_old(num_bytes, num_entities):
-    """
-    Make a batch request to datastore db.
+def multi_datastore(num_bytes, num_entities):
+    """Make a batch request to datastore db.
 
     - num_bytes: number of bytes to assign to data properties
     - num_entities: number of entities to send in batch request
@@ -86,9 +86,8 @@ def multi_old(num_bytes, num_entities):
     }
 
 
-def single(num_bytes):
-    """
-    Make a single request to datastore ndb.
+def single_ndb(num_bytes):
+    """Make a single request to datastore ndb.
 
     - num_bytes: number of bytes to assign to data properties
     Return: the time for put, get, and delete operations,
@@ -121,16 +120,15 @@ def single(num_bytes):
     }
 
 
-def multi(num_bytes, num_entities):
-    """
-    Make a batch request to datastore ndb.
+def multi_ndb(num_bytes, num_entities):
+    """Make a batch request to datastore ndb.
 
     - num_bytes: number of bytes to assign to data properties
     - num_entities: number of data entities (or rows) to set
     Return: the time for put, get, and delete operations,
             and whether the data access succeeded.
     """
-    # create an array of entities with given number of properties
+    # create an array of entities
     entities = []
     for i in range(num_entities):
         entities.append(models.SampleNdbModel(

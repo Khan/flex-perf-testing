@@ -1,7 +1,8 @@
+"""Some convenience methods for profiling memcache."""
 import base64
 import logging
 import os
-import queue
+import Queue
 import threading
 import time
 
@@ -27,8 +28,7 @@ memcache = memcache_client
 
 
 def single(num_bytes):
-    """
-    Make a single request to memcache.
+    """Make a single request to memcache.
 
     - num_bytes: number of bytes to attach to the key
     Return: the time for get, set, and delete operations,
@@ -71,12 +71,11 @@ def single(num_bytes):
     }
 
 
-def threaded(num_bytes, num_gets):
-    """
-    Make multiple threads of get requests from memcache.
+def threaded(num_bytes, num_threads):
+    """Make multiple threads of get requests from memcache.
 
     - num_bytes: number of bytes to attach to the key
-    - num_gets: number of gets to call (each in own thread)
+    - num_threads: number of gets to call (each in own thread)
     Return: the time for the get operations,
             and whether the data access succeeded.
     """
@@ -89,19 +88,19 @@ def threaded(num_bytes, num_gets):
         raise RuntimeError("Memcache set failed!")
 
     # create the queue
-    q = queue.Queue()
+    queue = Queue.Queue()
 
     # define the function to run
     def getter():
-        q.put(memcache.get(key))
+        queue.put(memcache.get(key))
 
     # time the get operations
     get_start = time.time()
     # call getter() in multiple threads
-    for _ in range(num_gets):
+    for _ in xrange(num_threads):
         threading.Thread(target=getter).start()
     # extract the result from the queue
-    data_again = q.get()
+    data_again = queue.get()
     get_end = time.time()
 
     if data != data_again:
@@ -120,8 +119,7 @@ def threaded(num_bytes, num_gets):
 
 
 def multi(num_bytes, num_vals):
-    """
-    Make a batch set and get request to memcache.
+    """Make a batch set and get request to memcache.
 
     - num_bytes: number of bytes to attach to the key
     - num_vals: number of (key, value) pairs in batch

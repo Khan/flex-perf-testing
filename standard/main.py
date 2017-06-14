@@ -14,6 +14,7 @@
 
 from flask import Flask
 from flask import request
+from flask import jsonify
 import logging
 
 import profile_memcache
@@ -27,27 +28,28 @@ API_ENDPOINTS = (PREAMBLE +
                  """Hello, everyone!
                  <br/>This is a web app we will use to test GAE Standard.<br/>
                  Endpoints:<br/>
-                  - /profile_memcache&bytes=(int)
+                  - /profile_memcache?bytes=(int)
                   -- a single memcache get/set operation<br/>
-                  - /profile_memcache&bytes=(int)&threads=(int)
+                  - /profile_memcache?bytes=(int)&threads=(int)
                   -- multiple threads of memcache get operations
                      on a single key<br/>
-                  - /profile_memcache&bytes=(int)&values=(int)
+                  - /profile_memcache?bytes=(int)&values=(int)
                   -- synchronous multiget/multiset memcache operation<br/>
-                  - /profile_memcache&bytes=(int)&gets=(int)&sleep=(0/1)
+                  - /profile_memcache?bytes=(int)&gets=(int)&sleep=(true/false)
                   -- async multiget memcache operations on the same key<br/>
-                  - /profile_memcache_unique&bytes=(int)&gets=(int)&sleep=(0/1)
+                  - /profile_memcache_unique?bytes=(int)&gets=(int)&
+                  sleep=(true/false)
                   -- async multiget memcache operations on different keys<br/>
                   <br/>
-                  - /profile_datastore&bytes=(int)
-                  -- a single datastore put/get operation<br/>
-                  - /profile_datastore&bytes=(int)&entities=(int)
-                  -- a datastore multiput/multiget operation<br/>
+                  - /profile_ndb?bytes=(int)
+                  -- a single ndb put/get operation<br/>
+                  - /profile_ndb?bytes=(int)&entities=(int)
+                  -- an ndb multiput/multiget operation<br/>
                   <br/>
-                  - /profile_datastore_old&bytes=(int)
-                  -- a single old datastore put/get operation<br/>
-                  - /profile_datastore_old&bytes=(int)&entities=(int)
-                  -- a batch old datastore put/get operation<br/>""")
+                  - /profile_datastore?bytes=(int)
+                  -- a single datastore put/get operation<br/>
+                  - /profile_datastore?bytes=(int)&entities=(int)
+                  -- a batch datastore put/get operation<br/>""")
 
 
 @app.route('/')
@@ -78,31 +80,13 @@ def prof_memcache():
     num_gets = int(num_gets) if num_gets else None
 
     if not (num_threads or num_values or num_gets):
-        result = profile_memcache.single(num_bytes)
-        return (PREAMBLE +
-                'Memcache single: Correct? {}<br/>'
-                'Set time: {}<br/>Get time: {}<br/>Del time: {}'.format(
-                    result['correct'], result['set_time'],
-                    result['get_time'], result['del_time']))
+        return jsonify(profile_memcache.single(num_bytes))
     elif num_threads:
-        result = profile_memcache.threaded(num_bytes, num_threads)
-        return (PREAMBLE +
-                'Memcache threaded: Correct? {}<br/>'
-                'Get time: {}'.format(
-                    result['correct'], result['get_time']))
+        return jsonify(profile_memcache.threaded(num_bytes, num_threads))
     elif num_values:
-        result = profile_memcache.multi(num_bytes, num_values)
-        return (PREAMBLE +
-                'Memcache multi: Correct? {}<br/>'
-                'Set time: {}<br/>Get time: {}<br/>Del time: {}'.format(
-                    result['correct'], result['set_time'],
-                    result['get_time'], result['del_time']))
+        return jsonify(profile_memcache.multi(num_bytes, num_values))
     else:
-        result = profile_memcache.repeated(num_bytes, num_gets, sleep)
-        return (PREAMBLE +
-                'Memcache repeated: Correct? {}<br/>'
-                'Get time: {}<br/>'.format(
-                    result['correct'], result['get_time']))
+        return jsonify(profile_memcache.repeated(num_bytes, num_gets, sleep))
 
 
 @app.route('/profile_memcache_unique')
@@ -111,29 +95,9 @@ def prof_memcache_unique():
     num_gets = int(request.args.get('gets'))
     sleep = (request.args.get('sleep') == 'true')
 
-    result = profile_memcache.repeated_unique(num_bytes, num_gets, sleep)
-    return (PREAMBLE +
-            'Memcache repeated unique: Correct? {}<br/>'
-            'Get time: {}<br/>'.format(
-                result['correct'], result['get_time']))
-
-
-@app.route('/profile_datastore_old')
-def prof_datastore_old():
-    num_bytes = int(request.args.get('bytes'))
-    num_entities = request.args.get('entities')
-
-    num_entities = int(num_entities) if num_entities else None
-
-    if not num_entities:
-        result = profile_datastore.single_old(num_bytes)
-    else:
-        result = profile_datastore.multi_old(num_bytes, num_entities)
-    return (PREAMBLE +
-            'Datastore old: Correct? {}<br/>'
-            'Put time: {}<br/>Get time: {}<br/>Del time: {}'.format(
-                result['correct'], result['put_time'],
-                result['get_time'], result['del_time']))
+    return jsonify(profile_memcache.repeated_unique(num_bytes,
+                                                    num_gets,
+                                                    sleep))
 
 
 @app.route('/profile_datastore')
@@ -144,15 +108,23 @@ def prof_datastore():
     num_entities = int(num_entities) if num_entities else None
 
     if not num_entities:
-        result = profile_datastore.single(num_bytes)
+        return jsonify(profile_datastore.single_datastore(num_bytes))
     else:
-        result = profile_datastore.multi(num_bytes,
-                                         num_entities)
-    return(PREAMBLE +
-           'Datastore ndb: Correct? {}<br/>'
-           'Put time: {}<br/>Get time: {}<br/>Del time: {}'.
-           format(result['correct'], result['put_time'],
-                  result['get_time'], result['del_time']))
+        return jsonify(profile_datastore.multi_datastore(num_bytes,
+                                                         num_entities))
+
+
+@app.route('/profile_ndb')
+def prof_ndb():
+    num_bytes = int(request.args.get('bytes'))
+    num_entities = request.args.get('entities')
+
+    num_entities = int(num_entities) if num_entities else None
+
+    if not num_entities:
+        return jsonify(profile_datastore.single_ndb(num_bytes))
+    else:
+        return jsonify(profile_datastore.multi_ndb(num_bytes, num_entities))
 
 if __name__ == '__main__':
     # This is used when running locally. Gunicorn is used to run the

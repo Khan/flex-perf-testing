@@ -1,3 +1,5 @@
+"""Some convenience methods for profiling memcache."""
+
 import Queue
 import base64
 import logging
@@ -32,8 +34,7 @@ def _wait_any_fast(rpcs, sleep, deadline=1):
 # Some convenience methods for Memcache profiling.
 
 def single(num_bytes):
-    """
-    Make a single request to memcache.
+    """Make a single request to memcache.
 
     - num_bytes: number of bytes to attach to the key
     Return: the time for get, set, and delete operations,
@@ -76,12 +77,11 @@ def single(num_bytes):
     }
 
 
-def threaded(num_bytes, num_gets):
-    """
-    Make multiple threads of get requests from memcache.
+def threaded(num_bytes, num_threads):
+    """Make multiple threads of get requests from memcache.
 
     - num_bytes: number of bytes to attach to the key
-    - num_gets: number of gets to call (each in own thread)
+    - num_threads: number of gets to call (each in own thread)
     Return: the time for the get operations,
             and whether the data access succeeded.
     """
@@ -103,7 +103,7 @@ def threaded(num_bytes, num_gets):
     # time the get operations
     get_start = time.time()
     # call getter() in multiple threads
-    for _ in xrange(num_gets):
+    for _ in xrange(num_threads):
         threading.Thread(target=getter).start()
     # extract the result from the queue
     data_again = queue.get()
@@ -125,8 +125,7 @@ def threaded(num_bytes, num_gets):
 
 
 def multi(num_bytes, num_vals):
-    """
-    Make a batch set and get request to memcache.
+    """Make a batch set and get request to memcache.
 
     - num_bytes: number of bytes to attach to the key
     - num_vals: number of (key, value) pairs in batch
@@ -167,8 +166,7 @@ def multi(num_bytes, num_vals):
 
 
 def repeated(num_bytes, num_gets, sleep):
-    """
-    Make multiple async get requests to the same key in memcache.
+    """Make multiple async get requests to the same key in memcache.
 
     - num_bytes: number of bytes to attach to the key
     - num_gets: number of async get requests to make
@@ -212,8 +210,7 @@ def repeated(num_bytes, num_gets, sleep):
 
 
 def repeated_unique(num_bytes, num_gets, sleep):
-    """
-    Make multiple async get requests to different keys in memcache.
+    """Make multiple async get requests to different keys in memcache.
 
     - num_bytes: number of bytes to attach to each key
     - num_gets: number of keys to set

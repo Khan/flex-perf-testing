@@ -11,6 +11,13 @@ builtins:
 # [START env_variables]
 env_variables:
   USE_GAE_MEMCACHE: 1
+  GOOGLE_APPLICATION_CREDENTIALS: ./khan-cachetest-4e33955967d6.json
+  DATASTORE_DATASET: khan-cachetest
+  DATASTORE_EMULATOR_HOST: localhost:8081
+  DATASTORE_EMULATOR_HOST_PATH: localhost:8081/datastore
+  DATASTORE_HOST: http://localhost:8081
+  DATASTORE_PROJECT_ID: khan-cachetest
+  DATASTORE_USE_PROJECT_ID_AS_APP_ID: true
   # MEMCACHE_SERVER: your-memcache-server
   # If you are using a third-party or self-hosted Memcached server with SASL
   # authentiation enabled, uncomment and fill in these values with your

@@ -1,26 +1,19 @@
+"""Some functions for making datastore requests."""
 import base64
-import logging
 import os
-import threading
 import time
 
-import google.cloud.datastore
-'''
-# figuring out import errors
-curdir = os.path.dirname(__file__)
-path = os.path.join(curdir, '/google_appengine')
-import sys
-sys.path.append(path)
-'''
-import google.appengine.ext.ndb
+import google
+reload(google)
 import google.appengine.ext.db
+import google.appengine.ext.ndb
+
 
 import models
 
 
-def single_old(num_bytes):
-    """
-    Make a single request to datastore db.
+def single_datastore(num_bytes):
+    """Make a single request to datastore db.
 
     - num_bytes: number of bytes to assign to data properties
     Return: the time for put, get, and delete operations,
@@ -57,9 +50,8 @@ def single_old(num_bytes):
     }
 
 
-def multi_old(num_bytes, num_entities):
-    """
-    Make a batch request to datastore db.
+def multi_datastore(num_bytes, num_entities):
+    """Make a batch request to datastore db.
 
     - num_bytes: number of bytes to assign to data properties
     - num_entities: number of entities to send in batch request
@@ -99,9 +91,8 @@ def multi_old(num_bytes, num_entities):
     }
 
 
-def single(num_bytes):
-    """
-    Make a single request to datastore ndb.
+def single_ndb(num_bytes):
+    """Make a single request to datastore ndb.
 
     - num_bytes: number of bytes to assign to data properties
     Return: the time for put, get, and delete operations,
@@ -111,7 +102,7 @@ def single(num_bytes):
     google.appengine.ext.ndb.get_context().set_memcache_policy(False)
     google.appengine.ext.ndb.get_context().set_cache_policy(False)
 
-    # create an entity with given number of properties
+    # create an entity
     sample = sample = models.SampleNdbModel(
         name=base64.b64encode(os.urandom(num_bytes)),
         email=base64.b64encode(os.urandom(num_bytes)))
@@ -139,9 +130,8 @@ def single(num_bytes):
     }
 
 
-def multi(num_bytes, num_entities):
-    """
-    Make a batch request to datastore ndb.
+def multi_ndb(num_bytes, num_entities):
+    """Make a batch request to datastore ndb.
 
     - num_bytes: number of bytes to assign to data properties
     - num_entities: number of data entities (or rows) to set
@@ -152,7 +142,7 @@ def multi(num_bytes, num_entities):
     google.appengine.ext.ndb.get_context().set_memcache_policy(False)
     google.appengine.ext.ndb.get_context().set_cache_policy(False)
 
-    # create an array of entities with given number of properties
+    # create an array of entities
     entities = []
     for i in range(num_entities):
         entities.append(models.SampleNdbModel(
