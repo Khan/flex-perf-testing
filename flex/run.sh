@@ -8,4 +8,5 @@ export DATASTORE_PROJECT_ID=khan-cachetest
 export DATASTORE_USE_PROJECT_ID_AS_APP_ID=true
 source env/bin/activate
 pip install -r requirements.txt
-python main.py
+gunicorn -b :8080 main:app
+# python main.py

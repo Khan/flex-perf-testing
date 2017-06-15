@@ -3,11 +3,9 @@ import base64
 import os
 import time
 
-import google
-reload(google)
+import google.cloud.datastore
 import google.appengine.ext.db
 import google.appengine.ext.ndb
-
 
 import models
 
@@ -87,7 +85,7 @@ def multi_datastore(num_bytes, num_entities):
         'put_time': put_end - put_start,
         'get_time': get_end - get_start,
         'del_time': delete_end - delete_start,
-        'correct': result == entities,
+        'correct': sorted(result) == sorted(entities)
     }
 
 

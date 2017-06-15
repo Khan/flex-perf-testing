@@ -46,9 +46,9 @@ API_ENDPOINTS = (PREAMBLE +
                   - /profile_ndb?bytes=(int)&entities=(int)
                   -- an ndb multiput/multiget operation<br/>
                   <br/>
-                  - /profile_datastore?bytes=(int)
+                  - /profile_db?bytes=(int)
                   -- a single datastore put/get operation<br/>
-                  - /profile_datastore?bytes=(int)&entities=(int)
+                  - /profile_db?bytes=(int)&entities=(int)
                   -- a batch datastore put/get operation<br/>""")
 
 
@@ -100,7 +100,7 @@ def prof_memcache_unique():
                                                     sleep))
 
 
-@app.route('/profile_datastore')
+@app.route('/profile_db')
 def prof_datastore():
     num_bytes = int(request.args.get('bytes'))
     num_entities = request.args.get('entities')
@@ -108,10 +108,10 @@ def prof_datastore():
     num_entities = int(num_entities) if num_entities else None
 
     if not num_entities:
-        return jsonify(profile_datastore.single_datastore(num_bytes))
+        return jsonify(profile_datastore.single_db(num_bytes))
     else:
-        return jsonify(profile_datastore.multi_datastore(num_bytes,
-                                                         num_entities))
+        return jsonify(profile_datastore.multi_db(num_bytes,
+                                                  num_entities))
 
 
 @app.route('/profile_ndb')
