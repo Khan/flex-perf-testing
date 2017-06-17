@@ -41,7 +41,7 @@ def single_datastore(num_bytes):
     delete_end = time.time()
 
     return {
-        'put_time': put_end - put_start,
+        'set_time': put_end - put_start,
         'get_time': get_end - get_start,
         'del_time': delete_end - delete_start,
         'correct': result == sample,
@@ -82,7 +82,7 @@ def multi_datastore(num_bytes, num_entities):
     delete_end = time.time()
 
     return {
-        'put_time': put_end - put_start,
+        'set_time': put_end - put_start,
         'get_time': get_end - get_start,
         'del_time': delete_end - delete_start,
         'correct': sorted(result) == sorted(entities)
@@ -121,7 +121,7 @@ def single_ndb(num_bytes):
     delete_end = time.time()
 
     return {
-        'put_time': put_end - put_start,
+        'set_time': put_end - put_start,
         'get_time': get_end - get_start,
         'del_time': delete_end - delete_start,
         'correct': result == sample,
@@ -163,7 +163,7 @@ def multi_ndb(num_bytes, num_entities):
     delete_end = time.time()
 
     return {
-        'put_time': put_end - put_start,
+        'set_time': put_end - put_start,
         'get_time': get_end - get_start,
         'del_time': delete_end - delete_start,
         'correct': result == entities

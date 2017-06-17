@@ -39,7 +39,7 @@ def single_db(num_bytes):
     delete_end = time.time()
 
     return {
-        'put_time': put_end - put_start,
+        'set_time': put_end - put_start,
         'get_time': get_end - get_start,
         'del_time': delete_end - delete_start,
         'correct': result == sample,
@@ -79,7 +79,7 @@ def multi_db(num_bytes, num_entities):
     delete_end = time.time()
 
     return {
-        'put_time': put_end - put_start,
+        'set_time': put_end - put_start,
         'get_time': get_end - get_start,
         'del_time': delete_end - delete_start,
         'correct': result == entities,
@@ -93,6 +93,10 @@ def single_ndb(num_bytes):
     Return: the time for put, get, and delete operations,
             and whether the data access succeeded.
     """
+    # disable memcache
+    ndb.get_context().set_memcache_policy(False)
+    ndb.get_context().set_cache_policy(False)
+
     sample = models.SampleNdbModel(
         name=base64.b64encode(os.urandom(num_bytes)),
         email=base64.b64encode(os.urandom(num_bytes)))
@@ -113,7 +117,7 @@ def single_ndb(num_bytes):
     delete_end = time.time()
 
     return {
-        'put_time': put_end - put_start,
+        'set_time': put_end - put_start,
         'get_time': get_end - get_start,
         'del_time': delete_end - delete_start,
         'correct': result == sample,
@@ -128,6 +132,10 @@ def multi_ndb(num_bytes, num_entities):
     Return: the time for put, get, and delete operations,
             and whether the data access succeeded.
     """
+    # disable memcache
+    ndb.get_context().set_memcache_policy(False)
+    ndb.get_context().set_cache_policy(False)
+
     # create an array of entities
     entities = []
     for i in range(num_entities):
@@ -151,7 +159,7 @@ def multi_ndb(num_bytes, num_entities):
     delete_end = time.time()
 
     return {
-        'put_time': put_end - put_start,
+        'set_time': put_end - put_start,
         'get_time': get_end - get_start,
         'del_time': delete_end - delete_start,
         'correct': result == entities

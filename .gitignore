@@ -3,6 +3,6 @@
 */webapp/
 *.json
 lib/
-*/google_appengine/*
+google_appengine/*
 analysis/*
 data/*
