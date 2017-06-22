@@ -11,18 +11,20 @@ The result from each request is written to a CSV file, which is then used
 by parse_data.py to extract percentiles for the latencies.
 """
 
-import requests
 import csv
-import sys
 import datetime
+import sys
+
+import requests
+
 
 # constants related to the data analysis
 TEST_STD = True  # True = standard, False = flex
 NUM_SAMPLES = 10  # number of samples to take for each set of params
-PARAMS = [{'bytes': 10}]  # the sets of params to test for
+PARAMS = [{'bytes': 10}, {'bytes': 1000}]  # the sets of params to test for
 
 # constants related to the specific request
-REQUEST_URL = 'profile_memcache'  # the request url (the service to test)
+REQUEST_URL = 'profile_db'  # the request url (the service to test)
 # the data columns we expect from the server
 HEADER_ROW = ['timestamp', 'type', 'request_url', 'params', 'correct',
               'del_time (ms)', 'get_time (ms)', 'set_time (ms)']
@@ -44,9 +46,8 @@ def test_request(request, params_list, num_samples, test_std):
         wr.writerow(HEADER_ROW)
 
         # run tests
-        for i in range(len(params_list)):
+        for (i, params) in enumerate(params_list):
             # log status
-            params = params_list[i]
             params_left = len(params_list) - (i + 1)
             sys.stdout.write('Testing %s: params %s (%s param sets left)\n' %
                              (test_type, params, params_left))
@@ -73,9 +74,10 @@ def test_request(request, params_list, num_samples, test_std):
                                  del_time * 1000,  # API gives ms
                                  get_time * 1000,
                                  set_time * 1000])
-                except ValueError as err:
+                except:
                     # catch an error if the server returns something unexpected
-                    sys.stdout.write('Unexpected error: %s\n' % err)
+                    sys.stdout.write('Unexpected error: %s\n' %
+                                     sys.exc_info()[0])
             sys.stdout.write('\nFinished param set %s.\n' % (i + 1))
 
 test_request(REQUEST_URL, PARAMS, NUM_SAMPLES, TEST_STD)

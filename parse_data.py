@@ -26,8 +26,7 @@ import numpy as np
 # the percentiles we want to extract from the data
 PERCENTILES = [10.0, 50.0, 90.0, 95.0, 99.0]
 # the files where the raw data resides
-DATA_FILES = ['data/flex2017-06-16 11:56:20.191473.csv',
-              'data/std2017-06-16 11:56:08.581900.csv']
+DATA_FILES = ['data/perm/flex2017-06-21 12:48:07.647530.csv']
 # the sets of params that we want to extract percentiles from
 PARAM_SETS = ["{'bytes': 10}", "{'bytes': 1000}"]
 # the columns in the data that we want to extract percentiles from
@@ -40,48 +39,21 @@ class DataFile(object):
     def __init__(self, filename):
         """Parse the csv file into an array of data."""
         with open(filename, 'rb') as f:
-            reader = csv.reader(f)
-            rows = list(reader)
-
-        # set self.rows to all data except the header row
-        self.rows = rows[1:]
-
-        # dictionary storing the column at which each attribute resides
-        self.header = {}
-        # the attributes in the data file
-        input_header = rows[0]
-        # iterate through the attributes, put their column into self.header
-        for col in range(len(input_header)):
-            self.header[input_header[col]] = col
-        # set the type (Flex/Standard) of the data
-        # all the rows in a single file should have the same type,
-        # so we just extract the type from the first row
-        self.type = self.rows[0][self.header['type']]
+            reader = csv.DictReader(f)
+            self.rows = list(reader)
 
     def get_column(self, params, col_name):
         """Extract a given column from the data matching a given param set."""
-        column = []
-        # the column we seek to extract
-        desired_col = self.get_col_number(col_name)
-        # the column that contains the params of the request
-        params_col = self.get_col_number('params')
-        # extract the given column from all rows matching the param set
-        for row in [r for r in self.rows if r[params_col] == params]:
-            column.append(float(row[desired_col]))
-        print('extracting column with %s samples\n' % len(column))
+        column = [float(r[col_name]) for r in self.rows if (r['params'] ==
+                                                            params)]
+        print('extracting column %s with %s samples\n' % (col_name,
+                                                          len(column)))
         return column
-
-    def get_col_number(self, col_name):
-        """Get the number of the column from the column name."""
-        return self.header[col_name]
 
 
 def get_percentiles(column, percentiles):
     """Get the desired percentiles of a given dataset."""
-    res = {}
-    for p in percentiles:
-        res[p] = np.percentile(column, p)
-    return res
+    return {p: np.percentile(column, p) for p in percentiles}
 
 
 def output_results():
@@ -101,9 +73,13 @@ def output_results():
                     # get the percentiles for this column
                     res = get_percentiles(data.get_column(p, col),
                                           PERCENTILES)
+                    print(res)
                     # write out the percentiles to analysis.csv
                     for x in PERCENTILES:
-                        wr.writerow([data.type, col, p, x, res[x]])
+                        # get the type (all rows have the same type)
+                        gae_type = data.rows[0]['type']
+                        # write the row
+                        wr.writerow([gae_type, col, p, x, res[x]])
 
 if __name__ == '__main__':
     output_results()
