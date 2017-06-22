@@ -1,4 +1,15 @@
-"""Run tests on flex and standard."""
+"""Run tests on flex and standard.
+
+In this file we make a series of requests to the Flex/Standard app.
+Each request runs a test on memcache, datastore, ndb, or some other data
+storage service on app engine. We run a certain number of requests with
+certain specific parameters (e.g. data sizes, number of entities to set,
+and others - see
+https://paper.dropbox.com/doc/Flex-vs-Standard-Testing-Implementation-Fxt0ipr8Og0PS8kShE8zP
+
+The result from each request is written to a CSV file, which is then used
+by parse_data.py to extract percentiles for the latencies.
+"""
 
 import requests
 import csv
@@ -6,15 +17,13 @@ import sys
 import datetime
 
 # constants related to the data analysis
-TEST_STD = False  # True = standard, False = flex
-NUM_SAMPLES = 25000  # number of samples to take for each set of params
-PARAMS = [{'bytes': 10}, {'bytes': 1000}, {'bytes': 1000000}]
-
-# previous tests: bytes = 10, 1000, 1000000
+TEST_STD = True  # True = standard, False = flex
+NUM_SAMPLES = 10  # number of samples to take for each set of params
+PARAMS = [{'bytes': 10}]  # the sets of params to test for
 
 # constants related to the specific request
-REQUEST_URL = 'profile_ndb'  # the request url
-# the data columns
+REQUEST_URL = 'profile_memcache'  # the request url (the service to test)
+# the data columns we expect from the server
 HEADER_ROW = ['timestamp', 'type', 'request_url', 'params', 'correct',
               'del_time (ms)', 'get_time (ms)', 'set_time (ms)']
 
@@ -52,14 +61,10 @@ def test_request(request, params_list, num_samples, test_std):
                 try:
                     result = requests.get(test_url + request,
                                           params=params).json()
-                    correct = (result['correct'] if 'correct' in result
-                               else None)
-                    del_time = (result['del_time'] if 'del_time' in result
-                                else 0)
-                    get_time = (result['get_time'] if 'get_time' in result
-                                else 0)
-                    set_time = (result['set_time'] if 'set_time' in result
-                                else 0)
+                    correct = result.get('correct', None)
+                    del_time = result.get('del_time', 0)
+                    get_time = result.get('get_time', 0)
+                    set_time = result.get('set_time', 0)
                     wr.writerow([datetime.datetime.now(),  # timestamp
                                  test_type,  # type (std or flex)
                                  request,  # url
@@ -69,6 +74,7 @@ def test_request(request, params_list, num_samples, test_std):
                                  get_time * 1000,
                                  set_time * 1000])
                 except ValueError as err:
+                    # catch an error if the server returns something unexpected
                     sys.stdout.write('Unexpected error: %s\n' % err)
             sys.stdout.write('\nFinished param set %s.\n' % (i + 1))
 
