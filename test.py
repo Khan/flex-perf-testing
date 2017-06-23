@@ -11,20 +11,13 @@ The result from each request is written to a CSV file, which is then used
 by parse_data.py to extract percentiles for the latencies.
 """
 
+import argparse
 import csv
 import datetime
 import sys
 
 import requests
 
-
-# constants related to the data analysis
-TEST_STD = True  # True = standard, False = flex
-NUM_SAMPLES = 10  # number of samples to take for each set of params
-PARAMS = [{'bytes': 10}, {'bytes': 1000}]  # the sets of params to test for
-
-# constants related to the specific request
-REQUEST_URL = 'profile_db'  # the request url (the service to test)
 # the data columns we expect from the server
 HEADER_ROW = ['timestamp', 'type', 'request_url', 'params', 'correct',
               'del_time (ms)', 'get_time (ms)', 'set_time (ms)']
@@ -80,4 +73,19 @@ def test_request(request, params_list, num_samples, test_std):
                                      sys.exc_info()[0])
             sys.stdout.write('\nFinished param set %s.\n' % (i + 1))
 
-test_request(REQUEST_URL, PARAMS, NUM_SAMPLES, TEST_STD)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Run tests on GAE.')
+    parser.add_argument('test_type',
+                        help='The type of the test (f - Flex, s - Standard)')
+    parser.add_argument('--n', dest='num_samples', type=int,
+                        help='The number of samples to run')
+    parser.add_argument('--url', dest='test_url',
+                        help='The endpoint to make the request to')
+    parser.add_argument('--b', dest='num_bytes', type=int, nargs='+',
+                        help='The byte sizes to run tests on')
+    args = parser.parse_args()
+
+    # constants related to the data analysis
+    PARAMS = [{'bytes': n} for n in args.num_bytes]
+    test_request(args.test_url, PARAMS, args.num_samples,
+                 args.test_type == 's')
