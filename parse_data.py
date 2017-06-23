@@ -26,9 +26,10 @@ import numpy as np
 # the percentiles we want to extract from the data
 PERCENTILES = [10.0, 50.0, 90.0, 95.0, 99.0]
 # the files where the raw data resides
-DATA_FILES = ['data/perm/flex2017-06-21 12:48:07.647530.csv']
+DATA_FILES = ['data/flex2017-06-22 16:06:15.409229.csv',
+              'data/std2017-06-22 16:06:07.142441.csv']
 # the sets of params that we want to extract percentiles from
-PARAM_SETS = ["{'bytes': 10}", "{'bytes': 1000}"]
+PARAM_SETS = ["{'bytes': 10000}", "{'bytes': 100000}"]
 # the columns in the data that we want to extract percentiles from
 COLUMNS = ['get_time (ms)', 'set_time (ms)', 'del_time (ms)']
 
@@ -44,10 +45,10 @@ class DataFile(object):
 
     def get_column(self, params, col_name):
         """Extract a given column from the data matching a given param set."""
-        column = [float(r[col_name]) for r in self.rows if (r['params'] ==
-                                                            params)]
-        print('extracting column %s with %s samples\n' % (col_name,
-                                                          len(column)))
+        column = [float(r[col_name]) for r in self.rows if
+                  r['params'] == params]
+        print('extracting column %s with %s samples\n' %
+              (col_name, len(column)))
         return column
 
 
@@ -73,7 +74,6 @@ def output_results():
                     # get the percentiles for this column
                     res = get_percentiles(data.get_column(p, col),
                                           PERCENTILES)
-                    print(res)
                     # write out the percentiles to analysis.csv
                     for x in PERCENTILES:
                         # get the type (all rows have the same type)

@@ -14,6 +14,7 @@ by parse_data.py to extract percentiles for the latencies.
 import argparse
 import csv
 import datetime
+import logging
 import sys
 
 import requests
@@ -67,25 +68,25 @@ def test_request(request, params_list, num_samples, test_std):
                                  del_time * 1000,  # API gives ms
                                  get_time * 1000,
                                  set_time * 1000])
-                except:
+                except Exception:
                     # catch an error if the server returns something unexpected
-                    sys.stdout.write('Unexpected error: %s\n' %
-                                     sys.exc_info()[0])
+                    logging.warning('Unexpected error (url %s): %s\n' %
+                                    (sys.exc_info()[0], test_url + request))
             sys.stdout.write('\nFinished param set %s.\n' % (i + 1))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run tests on GAE.')
-    parser.add_argument('test_type',
+    parser.add_argument('--type', '--t', default='s', choices=['f', 's'],
                         help='The type of the test (f - Flex, s - Standard)')
-    parser.add_argument('--n', dest='num_samples', type=int,
+    parser.add_argument('--num-samples', '--n', default=100, type=int,
                         help='The number of samples to run')
-    parser.add_argument('--url', dest='test_url',
+    parser.add_argument('--test-url', '--u', default='profile_memcache',
                         help='The endpoint to make the request to')
-    parser.add_argument('--b', dest='num_bytes', type=int, nargs='+',
-                        help='The byte sizes to run tests on')
+    parser.add_argument('--num-bytes', '--b', default=[10], type=int,
+                        nargs='+', help='The byte sizes to run tests on')
     args = parser.parse_args()
 
     # constants related to the data analysis
-    PARAMS = [{'bytes': n} for n in args.num_bytes]
-    test_request(args.test_url, PARAMS, args.num_samples,
-                 args.test_type == 's')
+    params = [{'bytes': n} for n in args.num_bytes]
+    test_request(args.test_url, params, args.num_samples,
+                 test_std=(args.type == 's'))
