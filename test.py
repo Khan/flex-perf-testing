@@ -18,6 +18,7 @@ import logging
 import sys
 
 import requests
+from tqdm import tqdm
 
 # the data columns we expect from the server
 HEADER_ROW = ['timestamp', 'type', 'request_url', 'params', 'correct',
@@ -33,7 +34,8 @@ def test_request(request, params_list, num_samples, test_std):
     test_type = 'std' if test_std else 'flex'
 
     # open the file
-    with open('./data/%s%s.csv' % (test_type, datetime.datetime.now()),
+    with open('./data/%s%s.csv' %
+              (test_type, datetime.datetime.now().strftime("%Y%m%d_%H%M%S")),
               'wb') as file:
         # set up the writer, write the header
         wr = csv.writer(file)
@@ -42,16 +44,11 @@ def test_request(request, params_list, num_samples, test_std):
         # run tests
         for (i, params) in enumerate(params_list):
             # log status
-            params_left = len(params_list) - (i + 1)
-            sys.stdout.write('Testing %s: params %s (%s param sets left)\n' %
-                             (test_type, params, params_left))
+            print('Testing %s/%s: %s (%s/%s param sets)' %
+                  (test_type, request, params, i + 1, len(params_list)))
 
             # take required number of samples
-            for sample in range(1, num_samples + 1):
-                # output a status to console
-                sys.stdout.write('\r- sample %s of %s' %
-                                 (sample, num_samples))
-                sys.stdout.flush()
+            for sample in tqdm(range(1, num_samples + 1)):
                 # make a request and log the data
                 try:
                     result = requests.get(test_url + request,
@@ -70,23 +67,38 @@ def test_request(request, params_list, num_samples, test_std):
                                  set_time * 1000])
                 except Exception:
                     # catch an error if the server returns something unexpected
-                    logging.warning('Unexpected error (url %s): %s\n' %
-                                    (sys.exc_info()[0], test_url + request))
-            sys.stdout.write('\nFinished param set %s.\n' % (i + 1))
+                    logging.exception('Unexpected error (url %s): %s' %
+                                      (sys.exc_info()[0], test_url + request))
+            print('Finished param set %s.' % (i + 1))
 
 if __name__ == '__main__':
+    PARAM_SETS = None  # no special parameter sets
+    # By default, you can specify the byte size parameter.
+    # If you want to set more specific parameter sets, use PARAM_SETS.
+    # For example, set PARAM_SETS = [{'bytes': 100, 'values': 10}] to
+    # run a test on a data size of 100 B with 10 values set at once.
+    # For a full list of the parameters that can be set from the data,
+    # see khan-cachetest.appspot.com or ka-testing-standard.appspot.com.
+
     parser = argparse.ArgumentParser(description='Run tests on GAE.')
-    parser.add_argument('--type', '--t', default='s', choices=['f', 's'],
+    parser.add_argument('--type', '-t', default='s', choices=['f', 's'],
                         help='The type of the test (f - Flex, s - Standard)')
-    parser.add_argument('--num-samples', '--n', default=100, type=int,
+    parser.add_argument('--num-samples', '-n', default=100, type=int,
                         help='The number of samples to run')
-    parser.add_argument('--test-url', '--u', default='profile_memcache',
+    parser.add_argument('--test-url', '-u', default='profile_memcache',
                         help='The endpoint to make the request to')
-    parser.add_argument('--num-bytes', '--b', default=[10], type=int,
-                        nargs='+', help='The byte sizes to run tests on')
+    if not PARAM_SETS:
+        # If special param sets are not specified, set this as
+        # a command line option.
+        parser.add_argument('--num-bytes', '-b', default=[10], type=int,
+                            nargs='+', help='The byte sizes to run tests on')
+
     args = parser.parse_args()
 
-    # constants related to the data analysis
-    params = [{'bytes': n} for n in args.num_bytes]
-    test_request(args.test_url, params, args.num_samples,
+    if not PARAM_SETS:
+        # PARAM_SETS has not been set, so set it equal to the
+        # command line input.
+        PARAM_SETS = [{'bytes': n} for n in args.num_bytes]
+
+    test_request(args.test_url, PARAM_SETS, args.num_samples,
                  test_std=(args.type == 's'))
