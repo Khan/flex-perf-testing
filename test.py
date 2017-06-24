@@ -18,7 +18,15 @@ import logging
 import sys
 
 import requests
-from tqdm import tqdm
+try:
+    import tqdm
+    progress_bar = tqdm.tqdm
+except ImportError:  # No module named "tqdm"
+    logging.info("To get nice progress bars, `pip install tqdm`.")
+
+    def progress_bar(x):
+        """Placeholder progress bar."""
+        return x
 
 # the data columns we expect from the server
 HEADER_ROW = ['timestamp', 'type', 'request_url', 'params', 'correct',
@@ -48,7 +56,7 @@ def test_request(request, params_list, num_samples, test_std):
                   (test_type, request, params, i + 1, len(params_list)))
 
             # take required number of samples
-            for sample in tqdm(range(1, num_samples + 1)):
+            for sample in progress_bar(range(1, num_samples + 1)):
                 # make a request and log the data
                 try:
                     result = requests.get(test_url + request,
